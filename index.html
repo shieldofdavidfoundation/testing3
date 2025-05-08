@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apps Script Test Button</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <button id="testButton">Test Apps Script Request</button>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // !! IMPORTANT !!
+        // Replace this with your actual deployed Google Apps Script Web App URL
+        const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzOAsugUtDgigSs0yRLugDWXlpVPTmyAdtIvV-3YIVr3modeeEkZrcLTrxKHjcmIKB/exec';
+
+        const testButton = document.getElementById('testButton');
+        const messageDiv = document.getElementById('message');
+
+        // Function to display messages
+        function displayMessage(msg, color = 'black') {
+            messageDiv.textContent = msg;
+            messageDiv.style.color = color;
+            messageDiv.style.display = 'block';
+        }
+
+        testButton.addEventListener('click', async () => {
+            displayMessage('Sending request...');
+
+            try {
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    mode: 'cors', // Use CORS mode
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Send a simple payload like your original script expects
+                    body: JSON.stringify({
+                        functionName: 'testFunction', // Use a dummy function name
+                        parameters: ['param1', 123]
+                    })
+                });
+
+                // Check if the response is OK (status 200-299)
+                if (!response.ok) {
+                    // If response is not OK, log status and try to get text
+                    console.error('HTTP error!', response.status, response.statusText);
+                     try {
+                         const errorText = await response.text();
+                         console.error('Response body:', errorText);
+                         displayMessage(`HTTP error! Status: ${response.status}. Details in console.`, 'red');
+                     } catch (txtError) {
+                         console.error('Could not read response body:', txtError);
+                         displayMessage(`HTTP error! Status: ${response.status}. Could not read response body.`, 'red');
+                     }
+                    return; // Stop processing
+                }
+
+                // If response is OK, try to parse JSON
+                try {
+                    const data = await response.json();
+                    console.log('Request successful:', data);
+                    displayMessage('Request successful! Check console for response data.', 'green');
+                } catch (jsonError) {
+                    // If JSON parsing fails, log the error and response text
+                    console.error('Failed to parse JSON response:', jsonError);
+                     try {
+                         const responseText = await response.text();
+                         console.error('Raw response text:', responseText);
+                          displayMessage('Request successful, but failed to parse JSON response. Check console.', 'orange');
+                     } catch (txtError) {
+                          console.error('Could not read response body after JSON error:', txtError);
+                           displayMessage('Request successful, but failed to parse JSON and body. Check console.', 'orange');
+                     }
+                }
+
+            } catch (error) {
+                // Catch network errors or errors before response is received
+                console.error('Fetch error:', error);
+                displayMessage(`Fetch error: ${error.message}. Check console.`, 'red');
+            }
+        });
+
+        // Add a dummy function in your Apps Script for 'testFunction'
+        // function testFunction(param1, param2) {
+        //   console.log("testFunction executed with:", param1, param2);
+        //   return { success: true, message: "Test function received parameters." };
+        // }
+
+    </script>
+
+</body>
+</html>
